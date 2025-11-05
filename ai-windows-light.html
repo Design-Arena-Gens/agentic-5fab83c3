@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Windows Light</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      color-scheme: light;
+      --accent: #4a7dff;
+      --accent-soft: rgba(74, 125, 255, 0.2);
+      --bg: #f5f6fb;
+      --bg-alt: rgba(255, 255, 255, 0.95);
+      --taskbar: rgba(244, 245, 251, 0.85);
+      --shadow: rgba(20, 26, 70, 0.15);
+      --text: #1d2340;
+      --text-soft: #5a648a;
+      --window-border: rgba(74, 125, 255, 0.25);
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+    }
+    * {
+      box-sizing: border-box;
+      user-select: none;
+    }
+    body {
+      margin: 0;
+      height: 100vh;
+      overflow: hidden;
+      background: radial-gradient(circle at top left, #ffffff 0%, #ebf0ff 50%, #eef2ff 100%);
+      color: var(--text);
+    }
+    .hidden {
+      display: none;
+    }
+    /* Boot Screen */
+    #boot-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(145deg, #f3f5ff 0%, #e6ecff 100%);
+      z-index: 999;
+    }
+    .boot-logo {
+      width: 120px;
+      height: 120px;
+      border-radius: 32px;
+      background: linear-gradient(135deg, #4a7dff, #92b4ff);
+      position: relative;
+      box-shadow: 0 20px 40px rgba(74, 125, 255, 0.25);
+      display: grid;
+      place-items: center;
+    }
+    .boot-logo::after {
+      content: "AI";
+      font-size: 36px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.1em;
+    }
+    .boot-text {
+      margin-top: 32px;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .boot-progress {
+      width: 260px;
+      height: 10px;
+      margin-top: 24px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.6);
+      overflow: hidden;
+      box-shadow: inset 0 2px 6px rgba(15, 30, 60, 0.08);
+    }
+    .boot-progress-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, rgba(74, 125, 255, 0.8), rgba(146, 180, 255, 0.9));
+    }
+    .boot-tip {
+      margin-top: 20px;
+      font-size: 14px;
+      color: var(--text-soft);
+      letter-spacing: 0.05em;
+    }
+    /* Desktop */
+    #desktop {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(145deg, #eef2ff 0%, #f7f8ff 100%);
+      padding: 24px;
+    }
+    .desktop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, 96px);
+      gap: 18px;
+      width: 50%;
+      max-width: 420px;
+    }
+    .desktop-icon {
+      width: 96px;
+      text-align: center;
+      padding: 12px 8px 14px;
+      border-radius: 16px;
+      transition: background 0.2s ease, transform 0.2s ease;
+      cursor: pointer;
+    }
+    .desktop-icon:hover {
+      background: rgba(255, 255, 255, 0.7);
+      transform: translateY(-3px);
+    }
+    .icon-glyph {
+      width: 46px;
+      height: 46px;
+      margin: 0 auto 10px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 600;
+      font-size: 18px;
+      box-shadow: 0 10px 18px rgba(74, 125, 255, 0.2);
+    }
+    .icon-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: pre-line;
+    }
+    /* Taskbar */
+    .taskbar {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(860px, 92vw);
+      height: 58px;
+      background: var(--taskbar);
+      border-radius: 20px;
+      box-shadow: 0 14px 36px rgba(20, 35, 80, 0.18);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      gap: 12px;
+    }
+    .taskbar button {
+      border: none;
+      background: transparent;
+      color: inherit;
+      cursor: pointer;
+      font: inherit;
+    }
+    .start-button {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: rgba(74, 125, 255, 0.15);
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .start-button:hover {
+      background: rgba(74, 125, 255, 0.3);
+      transform: scale(1.03);
+    }
+    .taskbar-apps {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .taskbar-app {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: rgba(255, 255, 255, 0.5);
+      box-shadow: 0 6px 12px rgba(30, 40, 90, 0.15);
+      position: relative;
+    }
+    .taskbar-app::after {
+      content: "";
+      position: absolute;
+      bottom: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 14px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .taskbar-app.active::after {
+      opacity: 1;
+    }
+    .tray {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .tray-clock {
+      padding: 6px 12px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.65);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-soft);
+    }
+    /* Start menu */
+    .start-menu {
+      position: fixed;
+      bottom: 94px;
+      left: 50%;
+      transform: translateX(-50%) scale(0.96);
+      width: min(420px, 86vw);
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 28px;
+      box-shadow: 0 28px 60px rgba(30, 45, 90, 0.2);
+      padding: 24px 26px 22px;
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+      transition: transform 0.24s ease, opacity 0.24s ease;
+      opacity: 0;
+      backdrop-filter: blur(16px);
+    }
+    .start-menu.visible {
+      display: flex;
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+    .start-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .start-header h2 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .start-search {
+      position: relative;
+      border-radius: 14px;
+      background: rgba(74, 125, 255, 0.08);
+      padding: 10px 12px 10px 38px;
+      font-size: 14px;
+      color: var(--text-soft);
+    }
+    .start-search::before {
+      content: "🔍";
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 16px;
+    }
+    .start-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .start-tile {
+      background: rgba(74, 125, 255, 0.12);
+      border-radius: 18px;
+      padding: 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .start-tile:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 28px rgba(34, 50, 120, 0.18);
+    }
+    .start-tile .tile-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 600;
+      font-size: 16px;
+      box-shadow: 0 12px 18px rgba(74, 125, 255, 0.25);
+    }
+    .start-tile span {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    /* Windows */
+    .window {
+      position: absolute;
+      top: 120px;
+      left: 160px;
+      width: 420px;
+      min-height: 280px;
+      background: var(--bg-alt);
+      border-radius: 20px;
+      box-shadow: 0 30px 60px rgba(20, 35, 80, 0.25);
+      overflow: hidden;
+      border: 1px solid var(--window-border);
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(18px);
+    }
+    .window-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.85);
+      cursor: grab;
+    }
+    .window-header:active {
+      cursor: grabbing;
+    }
+    .window-title {
+      flex: 1;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .window-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .window-button {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: rgba(74, 125, 255, 0.24);
+      position: relative;
+    }
+    .window-button[data-action="close"] {
+      background: rgba(255, 77, 109, 0.8);
+    }
+    .window-button[data-action="minimize"]::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 8px;
+      height: 2px;
+      background: rgba(20, 35, 80, 0.6);
+      transform: translate(-50%, -50%);
+    }
+    .window-button[data-action="close"]::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 6px;
+      height: 6px;
+      border-radius: 2px;
+      background: #fff;
+      transform: translate(-50%, -50%) rotate(45deg);
+      clip-path: polygon(0 40%, 40% 0, 60% 0, 100% 40%, 100% 60%, 60% 100%, 40% 100%, 0 60%);
+    }
+    .window-content {
+      flex: 1;
+      padding: 20px 22px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-soft);
+    }
+    .ai-console {
+      background: rgba(74, 125, 255, 0.1);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-top: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .ai-console::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, rgba(74, 125, 255, 0.22), rgba(210, 220, 255, 0.18));
+      opacity: 0.65;
+    }
+    .ai-console-cursor {
+      animation: blink 1s steps(1) infinite;
+    }
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      50.1%, 100% { opacity: 0; }
+    }
+    .window-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 12px;
+      margin-top: 20px;
+    }
+    .card {
+      padding: 14px 16px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: 0 10px 24px rgba(20, 30, 60, 0.08);
+      font-size: 13px;
+      color: var(--text-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .card strong {
+      color: var(--text);
+      font-size: 14px;
+    }
+    /* Widgets */
+    .widgets {
+      position: absolute;
+      top: 40px;
+      right: 42px;
+      width: 280px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .widget {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 18px 38px rgba(20, 30, 70, 0.18);
+      font-size: 14px;
+      color: var(--text-soft);
+      position: relative;
+      overflow: hidden;
+    }
+    .widget::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      border: 1px solid rgba(74, 125, 255, 0.12);
+    }
+    .widget h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .weather-icon {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+    .status-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .badge {
+      padding: 6px 10px;
+      border-radius: 12px;
+      background: rgba(74, 125, 255, 0.15);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 14px;
+    }
+    .timeline-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .timeline-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(74, 125, 255, 0.18);
+    }
+    .timeline-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    /* Notifications */
+    .notification-center {
+      position: fixed;
+      top: 28px;
+      right: 24px;
+      width: 280px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 24px;
+      box-shadow: 0 30px 64px rgba(20, 30, 70, 0.25);
+      padding: 18px;
+      display: none;
+      flex-direction: column;
+      gap: 14px;
+      backdrop-filter: blur(14px);
+    }
+    .notification-center.visible {
+      display: flex;
+    }
+    .notification {
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(74, 125, 255, 0.1);
+      font-size: 13px;
+      color: var(--text-soft);
+    }
+    .notification strong {
+      color: var(--text);
+      display: block;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+    /* Misc */
+    .glass {
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    @media (max-width: 900px) {
+      #desktop {
+        padding: 16px;
+      }
+      .desktop-grid {
+        width: 100%;
+        max-width: none;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      }
+      .widgets {
+        display: none;
+      }
+      .window {
+        width: calc(100vw - 60px);
+        left: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="boot-screen">
+    <div class="boot-logo"></div>
+    <div class="boot-text">AI Windows Light</div>
+    <div class="boot-progress">
+      <div class="boot-progress-fill"></div>
+    </div>
+    <div class="boot-tip">Загрузка интеллектуального окружения…</div>
+  </div>
+
+  <div id="desktop" class="hidden">
+    <div class="desktop-grid" id="desktop-grid"></div>
+    <div class="widgets">
+      <div class="widget glass">
+        <h3>Сводка AI</h3>
+        <div class="status-badges">
+          <div class="badge">Vision OK</div>
+          <div class="badge">GPT-Next</div>
+          <div class="badge">Realtime 120ms</div>
+        </div>
+        <div class="timeline">
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div>
+              <div class="timeline-label">12:40 • Brief Completed</div>
+              <div>Рекомендации отправлены команде</div>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div>
+              <div class="timeline-label">12:10 • Data Pulse</div>
+              <div>Модели синхронизированы с облаком</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="widget glass">
+        <h3>Погода</h3>
+        <div class="weather-icon">🌤️</div>
+        <div>Солнечно • 23°C</div>
+        <div>Лёгкий ветер • Влажность 38%</div>
+      </div>
+    </div>
+    <div class="taskbar">
+      <button class="start-button" id="start-button">⊞</button>
+      <div class="taskbar-apps" id="taskbar-apps"></div>
+      <div class="tray">
+        <button id="tray-notifications" class="start-button" style="width:38px;height:38px;border-radius:12px;font-size:18px;">🔔</button>
+        <div class="tray-clock" id="tray-clock">12:00</div>
+      </div>
+    </div>
+    <div class="start-menu" id="start-menu">
+      <div class="start-header">
+        <h2>AI Windows</h2>
+        <div class="badge" style="background:rgba(74,125,255,0.18);">Light</div>
+      </div>
+      <div class="start-search">Поиск по приложениям и файлам</div>
+      <div class="start-grid" id="start-grid"></div>
+    </div>
+    <div class="notification-center" id="notification-center"></div>
+  </div>
+
+  <script>
+    const settings = {
+      bootDuration: 2600,
+      wallpaper: "linear-gradient(145deg, #eef2ff 0%, #f5f8ff 100%)",
+      theme: "light",
+      tips: [
+        "AI готов к мгновенным инсайтам",
+        "Храните задачи на виджете продуктивности",
+        "Используйте AI Notes для быстрых идей"
+      ]
+    };
+
+    const fileSystem = (() => {
+      const desktopItems = [
+        { id: "ai-console", name: "AI\\nConsole", accent: "#4a7dff", icon: "⚡", app: "aiConsole" },
+        { id: "vision-board", name: "Vision\\nBoard", accent: "#7c5bff", icon: "🪟", app: "visionBoard" },
+        { id: "notes", name: "AI\\nNotes", accent: "#ff7ea1", icon: "📝", app: "notes" },
+        { id: "gallery", name: "Media\\nHub", accent: "#3ac6a8", icon: "🎨", app: "gallery" }
+      ];
+      const startApps = [
+        { id: "timeline", title: "Timeline", icon: "🕒", app: "timeline" },
+        { id: "insights", title: "Insights", icon: "📊", app: "insights" },
+        { id: "control", title: "Control", icon: "🎛️", app: "control" },
+        { id: "updates", title: "Updates", icon: "✨", app: "updates" },
+        { id: "assistant", title: "Assistant", icon: "🤖", app: "aiConsole" },
+        { id: "studio", title: "Studio", icon: "🎬", app: "gallery" }
+      ];
+      const notifications = [
+        { title: "AI Insight Ready", message: "Прогноз спроса обновлён на основе свежих данных" },
+        { title: "Автономный режим", message: "Выполнено 6 рутинных задач без вмешательства" }
+      ];
+      return {
+        getDesktopItems: () => desktopItems.slice(),
+        getStartItems: () => startApps.slice(),
+        getNotifications: () => notifications.slice()
+      };
+    })();
+
+    const windowManager = (() => {
+      const state = {
+        zIndex: 20,
+        windows: new Map(),
+        dragState: null
+      };
+
+      const createWindow = ({ id, title, content, width = 420, height = 320 }) => {
+        if (state.windows.has(id)) {
+          focusWindow(id);
+          return state.windows.get(id).node;
+        }
+        const win = document.createElement("section");
+        win.className = "window";
+        win.dataset.windowId = id;
+        win.style.width = width + "px";
+        win.style.minHeight = height + "px";
+        win.style.zIndex = ++state.zIndex;
+
+        const header = document.createElement("header");
+        header.className = "window-header";
+        header.innerHTML = `
+          <div class="window-button" data-action="minimize"></div>
+          <div class="window-button" data-action="close"></div>
+          <div class="window-title">${title}</div>
+        `;
+
+        const contentEl = document.createElement("div");
+        contentEl.className = "window-content";
+        contentEl.innerHTML = content;
+
+        win.append(header, contentEl);
+        document.getElementById("desktop").appendChild(win);
+        state.windows.set(id, { node: win, minimized: false });
+
+        attachWindowEvents(win);
+        focusWindow(id);
+        appManager.markActive(id);
+        return win;
+      };
+
+      const attachWindowEvents = (win) => {
+        const header = win.querySelector(".window-header");
+        header.addEventListener("pointerdown", (event) => {
+          event.preventDefault();
+          focusWindow(win.dataset.windowId);
+          const rect = win.getBoundingClientRect();
+          state.dragState = {
+            id: win.dataset.windowId,
+            offsetX: event.clientX - rect.left,
+            offsetY: event.clientY - rect.top,
+            pendingX: rect.left,
+            pendingY: rect.top,
+            frame: null
+          };
+          header.setPointerCapture(event.pointerId);
+        });
+
+        header.addEventListener("pointermove", (event) => {
+          if (!state.dragState) return;
+          state.dragState.pendingX = event.clientX - state.dragState.offsetX;
+          state.dragState.pendingY = event.clientY - state.dragState.offsetY;
+          scheduleDragFrame();
+        });
+
+        const endDrag = () => {
+          state.dragState = null;
+        };
+        header.addEventListener("pointerup", endDrag);
+        header.addEventListener("pointercancel", endDrag);
+
+        win.querySelectorAll(".window-button").forEach((btn) => {
+          btn.addEventListener("click", (event) => {
+            const action = event.currentTarget.dataset.action;
+            if (action === "close") closeWindow(win.dataset.windowId);
+            if (action === "minimize") minimizeWindow(win.dataset.windowId);
+          });
+        });
+
+        win.addEventListener("pointerdown", () => focusWindow(win.dataset.windowId));
+      };
+
+      const scheduleDragFrame = () => {
+        if (!state.dragState || state.dragState.frame) return;
+        state.dragState.frame = requestAnimationFrame(() => {
+          state.dragState.frame = null;
+          const { node } = state.windows.get(state.dragState.id) || {};
+          if (!node) return;
+          node.style.left = Math.max(32, Math.min(window.innerWidth - node.offsetWidth - 32, state.dragState.pendingX)) + "px";
+          node.style.top = Math.max(60, Math.min(window.innerHeight - node.offsetHeight - 80, state.dragState.pendingY)) + "px";
+        });
+      };
+
+      const focusWindow = (id) => {
+        const entry = state.windows.get(id);
+        if (!entry) return;
+        state.zIndex += 1;
+        entry.node.style.zIndex = state.zIndex;
+        entry.node.classList.add("focused");
+        state.windows.forEach((value, key) => {
+          if (key !== id) value.node.classList.remove("focused");
+        });
+      };
+
+      const closeWindow = (id) => {
+        const entry = state.windows.get(id);
+        if (!entry) return;
+        entry.node.remove();
+        state.windows.delete(id);
+        appManager.markInactive(id);
+      };
+
+      const minimizeWindow = (id) => {
+        const entry = state.windows.get(id);
+        if (!entry) return;
+        entry.minimized = true;
+        entry.node.style.display = "none";
+        appManager.markInactive(id);
+      };
+
+      const toggleWindow = (id) => {
+        const entry = state.windows.get(id);
+        if (!entry) return;
+        if (entry.minimized) {
+          entry.node.style.display = "flex";
+          entry.minimized = false;
+          focusWindow(id);
+          appManager.markActive(id);
+          return;
+        }
+        minimizeWindow(id);
+      };
+
+      return { createWindow, focusWindow, closeWindow, minimizeWindow, toggleWindow };
+    })();
+
+    const appManager = (() => {
+      const taskbar = document.getElementById("taskbar-apps");
+      const items = new Map();
+
+      const apps = {
+        aiConsole: {
+          title: "AI Console",
+          content: `
+            <p>Добро пожаловать в консоль AI Windows Light. Система отслеживает ключевые показатели в реальном времени и готова к диалогам.</p>
+            <div class="ai-console">
+              <strong>System • Realtime log</strong>
+              <div>INIT &gt; Подключение к когнитивной матрице...</div>
+              <div>SYNC &gt; Модуль Vision активен и синхронизирован.</div>
+              <div>READY &gt; Нейронная сеть на частоте 120Hz.</div>
+              <div>USER &gt; Ожидание команд<span class="ai-console-cursor">▌</span></div>
+            </div>
+          `
+        },
+        visionBoard: {
+          title: "Vision Board",
+          content: `
+            <p>Стратегическая панель визуальных ориентиров. Отслеживайте проекты, цели и тренды.</p>
+            <div class="window-grid">
+              <div class="card"><strong>AI Assist</strong>Автоматизация маркетинга • +38%</div>
+              <div class="card"><strong>Vision Loop</strong>Prototype • v0.9 готов к тестам</div>
+              <div class="card"><strong>Focus Areas</strong>1. UX Adapt • 2. ML Ops • 3. Growth</div>
+              <div class="card"><strong>Glow Metric</strong>Пульс действий • 92 из 100</div>
+            </div>
+          `
+        },
+        notes: {
+          title: "AI Notes",
+          content: `
+            <p>Быстрые заметки с подсветкой идей.</p>
+            <div class="card">
+              <strong>Идея • Smart Context</strong>
+              Модуль распознаёт паттерны команд и предлагает готовые сценарии.
+            </div>
+            <div class="card">
+              <strong>Задача • Demo Flow</strong>
+              Записать демонстрацию работы Light-интерфейса с тремя сценариями.
+            </div>
+          `
+        },
+        gallery: {
+          title: "Media Hub",
+          content: `
+            <p>Мини-обзор визуальных материалов.</p>
+            <div class="window-grid">
+              <div class="card"><strong>Gradient Lab</strong>Свежие светлые палитры • 08.24</div>
+              <div class="card"><strong>Illustration Pack</strong>AI generated • Серия Aurora</div>
+              <div class="card"><strong>UI Motion</strong>Видеоловушка • Smooth micro-interactions</div>
+            </div>
+          `
+        },
+        timeline: {
+          title: "Timeline",
+          content: `
+            <p>Лента активности AI Windows Light.</p>
+            <div class="timeline">
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div>
+                  <div class="timeline-label">12:42 • Brief</div>
+                  <div>Выполнен анализ входящих запросов.</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div>
+                  <div class="timeline-label">12:38 • Neural Sync</div>
+                  <div>Подключение новых датасетов завершено.</div>
+                </div>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div>
+                  <div class="timeline-label">12:28 • Light Mode</div>
+                  <div>Система оптимизирована для демо-режима.</div>
+                </div>
+              </div>
+            </div>
+          `
+        },
+        insights: {
+          title: "Insights",
+          content: `
+            <p>Ключевые показатели сегодня.</p>
+            <div class="window-grid">
+              <div class="card"><strong>Efficiency</strong>96% задач закрыты AI</div>
+              <div class="card"><strong>Data Health</strong>Сигнал 99.4%</div>
+              <div class="card"><strong>Teams Synced</strong>Product, Growth, Ops</div>
+            </div>
+          `
+        },
+        control: {
+          title: "Control Center",
+          content: `
+            <p>Управление модулями среды.</p>
+            <div class="window-grid">
+              <div class="card"><strong>Realtime Link</strong>Активен</div>
+              <div class="card"><strong>Ambient Mode</strong>Soft Highlights</div>
+              <div class="card"><strong>Security</strong>Biometric Lock</div>
+              <div class="card"><strong>AI Persona</strong>Adaptive Light</div>
+            </div>
+          `
+        },
+        updates: {
+          title: "Updates",
+          content: `
+            <p>Последние обновления ядра.</p>
+            <div class="card">
+              <strong>AI Suite 1.4.2</strong>
+              Обновлены переходы и улучшен time-to-vision на 18%.
+            </div>
+            <div class="card">
+              <strong>UX Layer Patch</strong>
+              Добавлены новые виджеты и контекстные подсказки.
+            </div>
+          `
+        }
+      };
+
+      const createTaskbarButton = (id, label, icon) => {
+        const btn = document.createElement("button");
+        btn.className = "taskbar-app";
+        btn.dataset.appId = id;
+        btn.innerHTML = `<span>${icon}</span>`;
+        btn.addEventListener("click", () => {
+          windowManager.toggleWindow(id);
+        });
+        taskbar.appendChild(btn);
+        items.set(id, { button: btn, label });
+        return btn;
+      };
+
+      const launch = (appId) => {
+        const app = apps[appId];
+        if (!app) return;
+        const existing = document.querySelector(\`.window[data-window-id="\${appId}"]\`);
+        if (existing) {
+          windowManager.toggleWindow(appId);
+          return;
+        }
+        if (!items.has(appId)) {
+          createTaskbarButton(appId, app.title, app.title.slice(0, 1));
+        }
+        windowManager.createWindow({
+          id: appId,
+          title: app.title,
+          content: app.content
+        });
+      };
+
+      const markActive = (id) => {
+        const entry = items.get(id);
+        if (entry) entry.button.classList.add("active");
+      };
+
+      const markInactive = (id) => {
+        const entry = items.get(id);
+        if (entry) entry.button.classList.remove("active");
+      };
+
+      return { launch, markActive, markInactive };
+    })();
+
+    (function bootSequence() {
+      const bootScreen = document.getElementById("boot-screen");
+      const progressEl = bootScreen.querySelector(".boot-progress-fill");
+      const tipEl = bootScreen.querySelector(".boot-tip");
+      const startTime = performance.now();
+      let tipIndex = 0;
+      let lastTipChange = startTime;
+
+      const loop = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1, elapsed / settings.bootDuration);
+        progressEl.style.width = (progress * 100).toFixed(2) + "%";
+
+        if (now - lastTipChange > 1200) {
+          tipIndex = (tipIndex + 1) % settings.tips.length;
+          tipEl.textContent = settings.tips[tipIndex];
+          lastTipChange = now;
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(loop);
+        } else {
+          bootScreen.style.opacity = "0";
+          setTimeout(() => {
+            bootScreen.remove();
+            initDesktop();
+            document.getElementById("desktop").classList.remove("hidden");
+          }, 260);
+        }
+      };
+      requestAnimationFrame(loop);
+    })();
+
+    function initDesktop() {
+      renderDesktopIcons();
+      renderStartMenu();
+      renderNotifications();
+      initTaskbar();
+      startClock();
+    }
+
+    function renderDesktopIcons() {
+      const grid = document.getElementById("desktop-grid");
+      grid.innerHTML = "";
+      const items = fileSystem.getDesktopItems();
+      items.forEach((item, index) => {
+        const icon = document.createElement("div");
+        icon.className = "desktop-icon";
+        icon.style.setProperty("--index", index);
+        icon.innerHTML = `
+          <div class="icon-glyph" style="background:${item.accent}">${item.icon}</div>
+          <div class="icon-title">${item.name}</div>
+        `;
+        icon.addEventListener("dblclick", () => appManager.launch(item.app));
+        icon.addEventListener("click", () => appManager.launch(item.app));
+        grid.appendChild(icon);
+      });
+    }
+
+    function renderStartMenu() {
+      const startGrid = document.getElementById("start-grid");
+      startGrid.innerHTML = "";
+      const items = fileSystem.getStartItems();
+      items.forEach((item) => {
+        const tile = document.createElement("div");
+        tile.className = "start-tile";
+        tile.innerHTML = `
+          <div class="tile-icon" style="background:var(--accent);">${item.icon}</div>
+          <span>${item.title}</span>
+        `;
+        tile.addEventListener("click", () => {
+          toggleStartMenu(false);
+          appManager.launch(item.app);
+        });
+        startGrid.appendChild(tile);
+      });
+    }
+
+    function renderNotifications() {
+      const container = document.getElementById("notification-center");
+      container.innerHTML = "";
+      fileSystem.getNotifications().forEach((note) => {
+        const el = document.createElement("article");
+        el.className = "notification";
+        el.innerHTML = \`<strong>\${note.title}</strong>\${note.message}\`;
+        container.appendChild(el);
+      });
+    }
+
+    function initTaskbar() {
+      document.getElementById("start-button").addEventListener("click", () => toggleStartMenu());
+      document.getElementById("tray-notifications").addEventListener("click", () => toggleNotifications());
+      window.addEventListener("click", (event) => {
+        const startMenu = document.getElementById("start-menu");
+        const startButton = document.getElementById("start-button");
+        if (!startMenu.contains(event.target) && event.target !== startButton) {
+          toggleStartMenu(false);
+        }
+        const notifications = document.getElementById("notification-center");
+        if (
+          notifications.classList.contains("visible") &&
+          !notifications.contains(event.target) &&
+          event.target !== document.getElementById("tray-notifications")
+        ) {
+          toggleNotifications(false);
+        }
+      });
+    }
+
+    function toggleStartMenu(force) {
+      const menu = document.getElementById("start-menu");
+      const shouldShow = typeof force === "boolean" ? force : !menu.classList.contains("visible");
+      menu.classList.toggle("visible", shouldShow);
+    }
+
+    function toggleNotifications(force) {
+      const center = document.getElementById("notification-center");
+      const shouldShow = typeof force === "boolean" ? force : !center.classList.contains("visible");
+      center.classList.toggle("visible", shouldShow);
+    }
+
+    function startClock() {
+      const clock = document.getElementById("tray-clock");
+      const update = () => {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, "0");
+        const minutes = String(now.getMinutes()).padStart(2, "0");
+        clock.textContent = \`\${hours}:\${minutes}\`;
+      };
+      update();
+      setInterval(update, 1000 * 30);
+    }
+
+    // Launch default windows after boot
+    setTimeout(() => {
+      appManager.launch("aiConsole");
+      appManager.launch("visionBoard");
+    }, 600);
+  </script>
+</body>
+</html>
